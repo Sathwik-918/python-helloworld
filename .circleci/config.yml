@@ -1,14 +1,14 @@
 version: 2.1
 
 jobs:
-  build-and-release:
+  build-and-test:
     docker:
       - image: cimg/python:3.9
     
     steps:
       - checkout
       
-      # Install dependencies
+      # Create a virtual environment and install dependencies
       - run:
           name: Install Dependencies
           command: |
@@ -17,6 +17,13 @@ jobs:
             pip install -r requirements.txt
             pip install pyinstaller
       
+      # Run tests
+      - run:
+          name: Run Tests
+          command: |
+            . venv/bin/activate
+            pytest tests/
+      
       # Build executable
       - run:
           name: Build Executable
@@ -24,30 +31,18 @@ jobs:
             . venv/bin/activate
             pyinstaller --onefile src/hello.py
       
-      # Install GitHub CLI
-      - run:
-          name: Install GitHub CLI
-          command: |
-            type -p curl >/dev/null || (sudo apt-get update && sudo apt-get install -y curl)
-            curl -fsSL https://cli.github.com/packages/githubcli-archive.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-            && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-            && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-            && sudo apt-get update \
-            && sudo apt-get install gh -y
+      # Store test reports as artifacts
+      - store_artifacts:
+          path: tests/
+          destination: test-reports
       
-      # Create GitHub Release
-      - run:
-          name: Create GitHub Release
-          command: |
-            VERSION=$(date +"%Y.%m.%d")
-            gh release create v$VERSION \
-                dist/hello \
-                --repo $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
-                --title "Hello World Release $VERSION" \
-                --notes "Automated executable release from CircleCI"
+      # Store executable as artifact
+      - store_artifacts:
+          path: dist/
+          destination: executables
 
 workflows:
   version: 2
-  build-release-workflow:
+  build-test-workflow:
     jobs:
-      - build-and-release
+      - build-and-test
