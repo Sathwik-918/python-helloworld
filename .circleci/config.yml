@@ -1,4 +1,6 @@
 version: 2.1
+orbs:
+  gh: circleci/github-cli@2.2.0
 
 jobs:
   build-and-test:
@@ -50,24 +52,26 @@ jobs:
             # Build executable with versioned name
             pyinstaller --onefile src/hello.py --name "$EXECUTABLE_NAME"
       
-      # Store version information as artifacts
-      - store_artifacts:
-          path: artifacts/version
-          destination: version-info
+       # Prepare artifacts
+      - run:
+          name: Prepare Artifacts
+          command: |
+            mkdir -p artifacts
+            cp dist/* artifacts/
+            cp README.md artifacts/
+            cp LICENSE artifacts/
       
-      # Store test reports as artifacts
+      # Create GitHub Release
+      - gh/release:
+          tag: v${CIRCLE_BUILD_NUM}
+          title: Release ${CIRCLE_BUILD_NUM}
+          description: Automated release from CircleCI build
+          files: artifacts/*
+
+      # Upload artifacts
       - store_artifacts:
-          path: test-results
-          destination: test-reports
-      
-      # Store executables as artifacts
-      - store_artifacts:
-          path: dist/
-          destination: executables
-      
-      # Store test results for CircleCI test summary
-      - store_test_results:
-          path: test-results
+          path: artifacts
+          destination: python-builds
 
 workflows:
   version: 2
