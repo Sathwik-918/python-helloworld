@@ -5,7 +5,7 @@ def get_hello_message():
     Returns:
         str: A greeting message
     """
-    return "Hello, World from Python version!"
+    return "Hello, World from Python!"
 
 def main():
     """
