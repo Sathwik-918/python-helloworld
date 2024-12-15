@@ -1,7 +1,17 @@
-from flask import Flask
+def get_hello_message():
+    """
+    Returns a simple hello world message.
+    
+    Returns:
+        str: A greeting message
+    """
+    return "Hello, World from Python!"
 
-app = Flask(__name__)
+def main():
+    """
+    Main function to print the hello message.
+    """
+    print(get_hello_message())
 
-@app.route("/")
-def hello_world():
-    return "<p>Hello, World!</p>"
+if __name__ == "__main__":
+    main()
