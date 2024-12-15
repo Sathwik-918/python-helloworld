@@ -1,7 +1,10 @@
 version: 2.1
 
+orbs:
+  gh: circleci/github-cli@2.2.0
+
 jobs:
-  build-and-test:
+  build-and-release:
     docker:
       - image: cimg/python:3.9
     
@@ -30,9 +33,19 @@ jobs:
           command: |
             . venv/bin/activate
             pyinstaller --onefile src/hello.py
+      
+      # Create GitHub Release with artifacts
+      - gh/release:
+          tag: v${CIRCLE_BUILD_NUM}
+          title: Release ${CIRCLE_BUILD_NUM}
+          description: Automated release from CircleCI build
+          files: dist/*
 
 workflows:
   version: 2
-  build-test-workflow:
+  build-release-workflow:
     jobs:
-      - build-and-test
+      - build-and-release:
+          filters:
+            branches:
+              only: main
