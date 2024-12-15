@@ -1,17 +1,53 @@
 version: 2.1
-orbs:
-  python: circleci/python@2.1.1
+
 jobs:
-  build_and_test: # this can be any name you choose
-    executor: python/default # use the default executor defined within the orb
+  build-and-release:
+    docker:
+      - image: cimg/python:3.9
+    
     steps:
-      - checkout # checkout source code
-      - python/install-packages:
-          pkg-manager: pip
+      - checkout
+      
+      # Install dependencies
       - run:
-          name: Run tests
-          command: python -m pytest
+          name: Install Dependencies
+          command: |
+            python -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+            pip install pyinstaller
+      
+      # Build executable
+      - run:
+          name: Build Executable
+          command: |
+            . venv/bin/activate
+            pyinstaller --onefile src/hello.py
+      
+      # Install GitHub CLI
+      - run:
+          name: Install GitHub CLI
+          command: |
+            type -p curl >/dev/null || (sudo apt-get update && sudo apt-get install -y curl)
+            curl -fsSL https://cli.github.com/packages/githubcli-archive.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+            && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+            && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+            && sudo apt-get update \
+            && sudo apt-get install gh -y
+      
+      # Create GitHub Release
+      - run:
+          name: Create GitHub Release
+          command: |
+            VERSION=$(date +"%Y.%m.%d")
+            gh release create v$VERSION \
+                dist/hello \
+                --repo $CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME \
+                --title "Hello World Release $VERSION" \
+                --notes "Automated executable release from CircleCI"
+
 workflows:
-  build_test_deploy:
+  version: 2
+  build-release-workflow:
     jobs:
-      - build_and_test
+      - build-and-release
