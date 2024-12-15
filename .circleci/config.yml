@@ -1,6 +1,4 @@
 version: 2.1
-orbs:
-  gh: circleci/github-cli@2.2.0
 
 jobs:
   build-and-test:
@@ -19,62 +17,22 @@ jobs:
             pip install -r requirements.txt
             pip install pyinstaller
       
-      # Generate version information
-      - run:
-          name: Generate Version
-          command: |
-            # Create a version file with timestamp and git commit
-            mkdir -p artifacts/version
-            echo "Build Timestamp: $(date)" > artifacts/version/build_info.txt
-            echo "Git Commit: $(git rev-parse HEAD)" >> artifacts/version/build_info.txt
-            echo "Branch: $CIRCLE_BRANCH" >> artifacts/version/build_info.txt
-      
       # Run tests
       - run:
           name: Run Tests
           command: |
             . venv/bin/activate
-            mkdir -p test-results
-            pytest tests/ --junitxml=test-results/junit.xml
+            pytest tests/
       
-      # Build executable with versioned naming
+      # Build executable
       - run:
           name: Build Executable
           command: |
             . venv/bin/activate
-            # Create dist directory if it doesn't exist
-            mkdir -p dist
-            
-            # Generate version-specific executable name
-            VERSION=$(date +"%Y%m%d-%H%M%S")
-            EXECUTABLE_NAME="hello-world-$VERSION"
-            
-            # Build executable with versioned name
-            pyinstaller --onefile src/hello.py --name "$EXECUTABLE_NAME"
-      
-       # Prepare artifacts
-      - run:
-          name: Prepare Artifacts
-          command: |
-            mkdir -p artifacts
-            cp dist/* artifacts/
-            cp README.md artifacts/
-            cp LICENSE artifacts/
-      
-      # Create GitHub Release
-      - gh/release:
-          tag: v${CIRCLE_BUILD_NUM}
-          title: Release ${CIRCLE_BUILD_NUM}
-          description: Automated release from CircleCI build
-          files: artifacts/*
-
-      # Upload artifacts
-      - store_artifacts:
-          path: artifacts
-          destination: python-builds
+            pyinstaller --onefile src/hello.py
 
 workflows:
   version: 2
-  build-and-store-versions:
+  build-test-workflow:
     jobs:
       - build-and-test
