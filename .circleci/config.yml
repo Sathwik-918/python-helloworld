@@ -1,37 +1,37 @@
 version: 2.1
 
 jobs:
-  build-and-release:
+  build-test-release:
     docker:
       - image: cimg/python:3.9
     
     steps:
       - checkout
       
-      # Create a virtual environment and install dependencies
+      # Installing Dependencies and creating a virtual enviornment
       - run:
-          name: Install Dependencies
+          name: Install Necessary Dependencies
           command: |
             python -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
             pip install pyinstaller
       
-      # Run tests
+      # Run tests cases
       - run:
-          name: Run Tests
+          name: Run Test case
           command: |
             . venv/bin/activate
             pytest tests/
       
-      # Build executable
+      # Build executable for python
       - run:
-          name: Build Executable
+          name: Build Executables
           command: |
             . venv/bin/activate
             pyinstaller --onefile src/hello.py
       
-      # Create GitHub Release
+      # Create GitHub Release and store executables
       - run:
           name: Create GitHub Release
           command: |
@@ -52,9 +52,9 @@ jobs:
 
 workflows:
   version: 2
-  build-release-workflow:
+  build-test-release-workflow:
     jobs:
-      - build-and-release:
+      - build-test-release:
           filters:
             branches:
               only: main
