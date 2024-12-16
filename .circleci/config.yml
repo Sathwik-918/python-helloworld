@@ -1,8 +1,5 @@
 version: 2.1
 
-orbs:
-  gh: circleci/github-cli@2.2.0
-
 jobs:
   build-and-release:
     docker:
@@ -34,12 +31,24 @@ jobs:
             . venv/bin/activate
             pyinstaller --onefile src/hello.py
       
-      # Create GitHub Release with artifacts
-      - gh/release:
-          tag: v${CIRCLE_BUILD_NUM}
-          title: Release ${CIRCLE_BUILD_NUM}
-          description: Automated release from CircleCI build
-          files: dist/*
+      # Create GitHub Release
+      - run:
+          name: Create GitHub Release
+          command: |
+            # Install GitHub CLI if not already available
+            type gh || (type curl && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+            && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+            && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+            && sudo apt update \
+            && sudo apt install gh -y)
+            
+            # Create release
+            RELEASE_TAG="v0.1.${CIRCLE_BUILD_NUM}"
+            gh release create "$RELEASE_TAG" \
+              dist/* \
+              --repo "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}" \
+              --title "Release $RELEASE_TAG" \
+              --notes "Automated build from CircleCI"
 
 workflows:
   version: 2
